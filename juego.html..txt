@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Simple</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            font-family: sans-serif;
+            overflow: hidden;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #dot {
+            width: 50px;
+            height: 50px;
+            background-color: black;
+            border-radius: 50%;
+            display: none;
+        }
+        #message {
+            font-size: 24px;
+            color: #333;
+        }
+    </style>
+</head>
+<body onclick="handleTap()">
+
+    <div id="message">Toca la pantalla</div>
+    <div id="dot"></div>
+
+    <script>
+        let taps = 0;
+        const body = document.body;
+        const message = document.getElementById('message');
+        const dot = document.getElementById('dot');
+
+        function handleTap() {
+            taps++;
+            
+            if (taps < 5) {
+                message.innerText = `Llevas ${taps} toques...`;
+            } else if (taps === 5) {
+                // El gran cambio
+                body.style.backgroundColor = "green";
+                message.style.display = "none";
+                dot.style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>
