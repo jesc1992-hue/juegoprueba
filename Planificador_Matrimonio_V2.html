@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planificador Matrimonio 2.0</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f5f0ea}
+.header{background:#fff;padding:12px;font-weight:bold;border-bottom:1px solid #ccc}
+#salon{position:relative;height:85vh;overflow:hidden;background:#efe7dc}
+#dance{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;height:180px;background:#9b6a43;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;border-radius:8px}
+.table{position:absolute;width:90px;height:90px;border-radius:50%;background:#fff;border:3px solid #b8913a;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:move;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.controls{padding:10px;background:#fff;border-top:1px solid #ccc}
+button{padding:8px 12px;margin-right:5px}
+</style>
+</head>
+<body>
+<div class="header">💒 Planificador Matrimonio 2.0</div>
+<div id="salon"><div id="dance">PISTA DE BAILE</div></div>
+<div class="controls">
+<button onclick="addTable()">➕ Mesa</button>
+<button onclick="saveLayout()">💾 Guardar</button>
+<button onclick="window.print()">📄 PDF / Imprimir</button>
+</div>
+<script>
+let tables = JSON.parse(localStorage.getItem('tablesV2') || '[]');
+function render(){
+ const salon=document.getElementById('salon');
+ document.querySelectorAll('.table').forEach(e=>e.remove());
+ tables.forEach(t=>{
+   const d=document.createElement('div');
+   d.className='table';
+   d.innerText=t.name;
+   d.style.left=t.x+'px';
+   d.style.top=t.y+'px';
+   let dragging=false,ox=0,oy=0;
+   d.onpointerdown=(e)=>{dragging=true;ox=e.clientX-t.x;oy=e.clientY-t.y;};
+   d.onpointermove=(e)=>{if(!dragging)return;t.x=e.clientX-ox;t.y=e.clientY-oy;d.style.left=t.x+'px';d.style.top=t.y+'px';};
+   d.onpointerup=()=>dragging=false;
+   salon.appendChild(d);
+ });
+}
+function addTable(){tables.push({name:'Mesa '+(tables.length+1),x:80,y:80});render();saveLayout();}
+function saveLayout(){localStorage.setItem('tablesV2',JSON.stringify(tables));}
+if(tables.length===0){for(let i=1;i<=10;i++)tables.push({name:'Mesa '+i,x:40+(i%5)*180,y:40+Math.floor((i-1)/5)*260});}
+render();
+</script>
+</body>
+</html>
