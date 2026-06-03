@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Mesas — Magaly &amp; Juan 💒</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:Georgia,'Times New Roman',serif;background:#F7F1EB;color:#281408}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#D8C8B0;border-radius:3px}
+input,button{font-family:inherit}button:focus,input:focus{outline:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback} = React;
+
+/* ══ PALETA ══════════════════════════════════════════════════ */
+const C={
+  bg:"#F7F1EB",card:"#FFF",border:"#E3D3C0",
+  novia:"#B84F6A",noviaLt:"#FDF0F4",noviaBd:"#EDBBCA",
+  novio:"#2E6FA8",novioLt:"#EDF4FB",novioBd:"#B3CEED",
+  gold:"#B8913A",text:"#281408",mid:"#7A5840",light:"#B89070",
+  dropBg:"#EBF4FF",dropBd:"#3A88D8",
+};
+const bs=(bg,dis=false)=>({
+  padding:"6px 12px",background:dis?"#BFB8AF":bg,color:"#FFF",
+  border:"none",borderRadius:"7px",cursor:dis?"not-allowed":"pointer",
+  fontSize:"12px",fontWeight:700,whiteSpace:"nowrap",fontFamily:"inherit",opacity:dis?0.75:1
+});
+
+/* ══ DATOS INICIALES ════════════════════════════════════════ */
+const SEED_GUESTS=[
+  {id:1, name:"Magaly",           rel:"Novia",                        side:"novia"},
+  {id:2, name:"Walter Vásquez",   rel:"Papá de la Novia",             side:"novia"},
+  {id:3, name:"Isabel Cáceres",   rel:"Mamá de la Novia",             side:"novia"},
+  {id:4, name:"Ivonne Vásquez",   rel:"Hermana de la Novia",          side:"novia"},
+  {id:5, name:"Sergio Alberto",   rel:"Pareja de Ivonne",             side:"novia"},
+  {id:6, name:"Walter Fernández", rel:"Hijo de Ivonne",               side:"novia"},
+  {id:7, name:"Cata (Walter)",    rel:"Pareja de Walter Fernández",   side:"novia"},
+  {id:8, name:"Jesús Vásquez",    rel:"Hermano de la Novia",          side:"novia"},
+  {id:9, name:"Catalina Catalán", rel:"Esposa de Jesús Vásquez",      side:"novia"},
+  {id:10,name:"Alexis Vásquez",   rel:"Hermano de la Novia",          side:"novia"},
+  {id:11,name:"Daniela González", rel:"Esposa de Alexis Vásquez",     side:"novia"},
+  {id:12,name:"Maite Vásquez",    rel:"Hija de Alexis (17 años)",     side:"novia"},
+  {id:13,name:"Tía Magaly",       rel:"Tía de la Novia (70 años)",    side:"novia"},
+  {id:14,name:"Tía Quena",        rel:"Tía de la Novia (70 años)",    side:"novia"},
+  {id:15,name:"Tía Tere",         rel:"Tía de la Novia (70 años)",    side:"novia"},
+  {id:16,name:"Cristian",         rel:"Primo de la Novia",            side:"novia"},
+  {id:17,name:"Parcera",          rel:"Pareja de Cristian",           side:"novia"},
+  {id:18,name:"Mauri",            rel:"Primo de la Novia",            side:"novia"},
+  {id:19,name:"Javiera",          rel:"Pareja de Mauri",              side:"novia"},
+  {id:20,name:"Joby",             rel:"Prima de la Novia",            side:"novia"},
+  {id:21,name:"Orlando",          rel:"Esposo de Joby",               side:"novia"},
+  {id:22,name:"Jessi",            rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:23,name:"Esposo Jessi",     rel:"Esposo de Jessi",              side:"novia"},
+  {id:24,name:"Marjorie",         rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:25,name:"Esposo Marjorie",  rel:"Esposo de Marjorie",           side:"novia"},
+  {id:26,name:"Ange",             rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:27,name:"Javi G.",          rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:28,name:"Miguel",           rel:"Compañero de trabajo Novia",   side:"novia"},
+  {id:29,name:"Davis",            rel:"Compañero de trabajo Novia",   side:"novia"},
+  {id:30,name:"Hans",             rel:"Esposo de Davis",              side:"novia"},
+  {id:31,name:"Su",               rel:"Compañera de canto",           side:"novia"},
+  {id:32,name:"Pololo Su",        rel:"Pareja de Su",                 side:"novia"},
+  {id:33,name:"Sandra",           rel:"Compañera de canto",           side:"novia"},
+  {id:34,name:"Santiago",         rel:"Pareja de Sandra",             side:"novia"},
+  {id:35,name:"José",             rel:"Compañero canto/Sonidista",    side:"novia"},
+  {id:36,name:"Esposa José",      rel:"Esposa de José",               side:"novia"},
+  {id:37,name:"Jordan",           rel:"Compañera de canto",           side:"novia"},
+  {id:38,name:"Ale",              rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:39,name:"Pareja Ale",       rel:"Pareja de Ale",                side:"novia"},
+  {id:40,name:"Felipe",           rel:"Compañero de trabajo Novia",   side:"novia"},
+  {id:41,name:"Fran",             rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:42,name:"Elvis",            rel:"Primo de la Novia",            side:"novia"},
+  {id:43,name:"Tía Yoany",        rel:"Tía de la Novia",              side:"novia"},
+  {id:44,name:"Tía Jaque",        rel:"Tía de la Novia",              side:"novia"},
+  {id:45,name:"Fer",              rel:"Compañera de trabajo Novia",   side:"novia"},
+  {id:46,name:"Esposo Fer",       rel:"Esposo de Fer",                side:"novia"},
+  {id:47,name:"Mabel",            rel:"Amiga de la Novia",            side:"novia"},
+  {id:48,name:"Mabel Pololo",     rel:"Pareja de Mabel",              side:"novia"},
+  {id:49,name:"Sofía Fernández",  rel:"Hija de Ivonne (6 años) 👶",   side:"novia"},
+  {id:50,name:"Gastón Belmar",    rel:"Hijo de Sergio (9 años) 👶",   side:"novia"},
+  {id:51,name:"Gaspar Vásquez",   rel:"Hijo de Jesús (7 años) 👶",    side:"novia"},
+  {id:52,name:"Bruno Vásquez",    rel:"Hijo de Alexis (8 años) 👶",   side:"novia"},
+  {id:53,name:"Alonso Vásquez",   rel:"Hijo de Alexis (8 años) 👶",   side:"novia"},
+  {id:54,name:"Juan",             rel:"Novio",                        side:"novio"},
+  {id:55,name:"Mario Salinas",    rel:"Padre del Novio",              side:"novio"},
+  {id:56,name:"Mónica Cornejo",   rel:"Madre del Novio",              side:"novio"},
+  {id:57,name:"Javier Salinas",   rel:"Hermano del Novio",            side:"novio"},
+  {id:58,name:"Karen",            rel:"Pareja de Javier Salinas",     side:"novio"},
+  {id:59,name:"Tío Ramón",        rel:"Tío del Novio",                side:"novio"},
+  {id:60,name:"Pablo",            rel:"Primo del Novio",              side:"novio"},
+  {id:61,name:"Pía",              rel:"Pareja de Pablo",              side:"novio"},
+  {id:62,name:"Diego",            rel:"Primo del Novio",              side:"novio"},
+  {id:63,name:"Tío Lalo",         rel:"Tío del Novio",                side:"novio"},
+  {id:64,name:"Tía Eli",          rel:"Esposa de Tío Lalo",           side:"novio"},
+  {id:65,name:"Nacho",            rel:"Primo del Novio",              side:"novio"},
+  {id:66,name:"Polola Nacho",     rel:"Pareja de Nacho",              side:"novio"},
+  {id:67,name:"Ale",              rel:"Prima del Novio",              side:"novio"},
+  {id:68,name:"Cami",             rel:"Prima del Novio",              side:"novio"},
+  {id:69,name:"Gabriel",          rel:"Esposo de Cami",               side:"novio"},
+  {id:70,name:"Tía Queta",        rel:"Tía abuela Novio (80 años)",   side:"novio"},
+  {id:71,name:"Mindita",          rel:"Tía abuela Novio (80 años)",   side:"novio"},
+  {id:72,name:"Tía Clara",        rel:"Tía abuela Novio (80 años)",   side:"novio"},
+  {id:73,name:"Tío Mario",        rel:"Tío del Novio",                side:"novio"},
+  {id:74,name:"Flaco",            rel:"Amigo del Tío Ramón",          side:"novio"},
+  {id:75,name:"Tía Sole",         rel:"Amiga del Tío Ramón",          side:"novio"},
+  {id:76,name:"Tía Sara",         rel:"Amiga Madre del Novio",        side:"novio"},
+  {id:77,name:"Tío Juan Pablo",   rel:"Amigo Padre del Novio",        side:"novio"},
+  {id:78,name:"Cata",             rel:"Esposa de Tío Juan Pablo",     side:"novio"},
+  {id:79,name:"JP",               rel:"Amigo Novio/Hijo Tío J.P.",    side:"novio"},
+  {id:80,name:"Jocesillo",        rel:"Amigo Novio/Hijo Tío J.P.",    side:"novio"},
+  {id:81,name:"Felipe A.",        rel:"Amigo Novio/Hijo Tío J.P.",    side:"novio"},
+  {id:82,name:"Claudia",          rel:"Esposa de Felipe A.",          side:"novio"},
+  {id:83,name:"Os",               rel:"Amiga del Novio",              side:"novio"},
+  {id:84,name:"Gio",              rel:"Esposo de Os",                 side:"novio"},
+  {id:85,name:"Felipe V.",        rel:"Amigo del Novio",              side:"novio"},
+  {id:86,name:"Priscila",         rel:"Amiga Novio/Hija Tío J.P.",    side:"novio"},
+  {id:87,name:"Diego",            rel:"Amigo del Novio",              side:"novio"},
+  {id:88,name:"Belén",            rel:"Esposa de Diego",              side:"novio"},
+  {id:89,name:"Beto",             rel:"Amigo del Novio",              side:"novio"},
+  {id:90,name:"Esposa Beto",      rel:"Esposa de Beto",               side:"novio"},
+  {id:91,name:"Paula",            rel:"Compañera de trabajo Novio",   side:"novio"},
+  {id:92,name:"Pareja Paula",     rel:"Pareja de Paula",              side:"novio"},
+  {id:93,name:"Pamela",           rel:"Compañera de trabajo Novio",   side:"novio"},
+  {id:94,name:"Pareja Pamela",    rel:"Pareja de Pamela",             side:"novio"},
+  {id:95,name:"Ignacia",          rel:"Compañera de trabajo Novio",   side:"novio"},
+  {id:96,name:"Fernando",         rel:"Compañero de trabajo Novio",   side:"novio"},
+];
+
+const SEED_TABLES=[
+  {id:"t1", name:"Mesa de Honor",capacity:10,x:50, y:5 },
+  {id:"t2", name:"Mesa 2",       capacity:10,x:15, y:8 },
+  {id:"t3", name:"Mesa 3",       capacity:10,x:4,  y:30},
+  {id:"t4", name:"Mesa 4",       capacity:10,x:4,  y:55},
+  {id:"t5", name:"Mesa 5",       capacity:10,x:15, y:80},
+  {id:"t6", name:"Mesa 6",       capacity:10,x:38, y:88},
+  {id:"t7", name:"Mesa 7",       capacity:10,x:62, y:88},
+  {id:"t8", name:"Mesa 8",       capacity:10,x:83, y:80},
+  {id:"t9", name:"Mesa 9",       capacity:10,x:93, y:55},
+  {id:"t10",name:"Mesa 10",      capacity:10,x:93, y:30},
+  {id:"t11",name:"Mesa 11",      capacity:10,x:82, y:8 },
+];
+
+/* ══ MODAL AGREGAR INVITADO ══════════════════════════════════ */
+function AddGuestModal({onAdd,onClose}){
+  const [name,setName]=useState("");
+  const [rel,setRel]=useState("");
+  const [side,setSide]=useState("novia");
+  const go=()=>{if(!name.trim())return;onAdd(name.trim(),rel.trim()||"Invitado/a",side);onClose();};
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:"16px",padding:"24px",width:"100%",maxWidth:"340px",boxShadow:"0 24px 64px rgba(0,0,0,0.35)"}}>
+        <div style={{fontWeight:700,fontSize:"16px",marginBottom:"18px"}}>➕ Agregar Invitado</div>
+        <div style={{marginBottom:"12px"}}>
+          <div style={{fontSize:"11px",fontWeight:700,color:C.mid,marginBottom:"4px"}}>NOMBRE *</div>
+          <input value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Ej: María González" autoFocus
+            style={{width:"100%",padding:"9px 10px",borderRadius:"8px",border:`1.5px solid ${name?C.gold:C.border}`,fontSize:"14px",outline:"none",color:C.text,transition:"border-color 0.15s"}}/>
+        </div>
+        <div style={{marginBottom:"14px"}}>
+          <div style={{fontSize:"11px",fontWeight:700,color:C.mid,marginBottom:"4px"}}>PARENTESCO / RELACIÓN</div>
+          <input value={rel} onChange={e=>setRel(e.target.value)} placeholder="Ej: Amiga de la Novia"
+            style={{width:"100%",padding:"9px 10px",borderRadius:"8px",border:`1.5px solid ${C.border}`,fontSize:"14px",outline:"none",color:C.text}}/>
+        </div>
+        <div style={{marginBottom:"20px"}}>
+          <div style={{fontSize:"11px",fontWeight:700,color:C.mid,marginBottom:"6px"}}>FAMILIA</div>
+          <div style={{display:"flex",gap:"8px"}}>
+            {[{k:"novia",l:"💗 Magaly",c:C.novia,lt:C.noviaLt},{k:"novio",l:"💙 Juan",c:C.novio,lt:C.novioLt}].map(({k,l,c,lt})=>(
+              <button key={k} onClick={()=>setSide(k)}
+                style={{flex:1,padding:"10px",borderRadius:"9px",border:`2px solid ${side===k?c:C.border}`,background:side===k?lt:"transparent",cursor:"pointer",fontSize:"13px",fontWeight:side===k?700:400,color:side===k?c:C.mid,fontFamily:"inherit",transition:"all 0.12s"}}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:"8px"}}>
+          <button onClick={onClose} style={{flex:1,padding:"10px",borderRadius:"9px",border:`1px solid ${C.border}`,background:"transparent",cursor:"pointer",fontSize:"13px",color:C.mid,fontFamily:"inherit"}}>Cancelar</button>
+          <button onClick={go} disabled={!name.trim()} style={{...bs(C.gold,!name.trim()),flex:2,padding:"10px",borderRadius:"9px",fontSize:"13px"}}>Agregar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ GUEST CARD ══════════════════════════════════════════════ */
+function GuestCard({guest,fromTable,onMDrag,onTDrag,onReturn,onDelete,compact}){
+  const isN=guest.side==="novia";
+  return (
+    <div draggable
+      onDragStart={e=>{e.dataTransfer.effectAllowed="move";onMDrag(guest.id,fromTable);}}
+      onTouchStart={e=>{const t=e.touches[0];const r=e.currentTarget.getBoundingClientRect();if(onTDrag)onTDrag(t,r,guest.id,fromTable);}}
+      style={{padding:compact?"3px 8px":"7px 10px",borderRadius:"7px",background:isN?C.noviaLt:C.novioLt,border:`1px solid ${isN?C.noviaBd:C.novioBd}`,cursor:"grab",userSelect:"none",WebkitUserSelect:"none",WebkitTouchCallout:"none",WebkitTapHighlightColor:"transparent",marginBottom:"4px",display:"flex",alignItems:"center",gap:"6px",minWidth:0}}>
+      <div style={{width:"7px",height:"7px",borderRadius:"50%",background:isN?C.novia:C.novio,flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontWeight:600,fontSize:compact?"11px":"13px",color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{guest.name}</div>
+        {!compact&&<div style={{fontSize:"11px",color:C.mid,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{guest.rel}</div>}
+      </div>
+      {!compact&&<span style={{fontSize:"9px",fontWeight:800,padding:"2px 5px",borderRadius:"4px",background:isN?C.novia:C.novio,color:"#FFF",flexShrink:0}}>{isN?"MAGA":"JUAN"}</span>}
+      {onReturn&&<button onClick={e=>{e.stopPropagation();onReturn(guest.id);}} title="Devolver al pool"
+        style={{background:"none",border:"none",cursor:"pointer",color:"#CCC",fontSize:"14px",padding:"0 2px",lineHeight:1,flexShrink:0}}>×</button>}
+      {onDelete&&<button onClick={e=>{e.stopPropagation();if(window.confirm("¿Eliminar a "+guest.name+" de la lista de invitados?\n\nEsta acción no se puede deshacer."))onDelete(guest.id);}} title="Eliminar invitado"
+        style={{background:"none",border:"none",cursor:"pointer",color:"#D05050",fontSize:"15px",padding:"2px 4px",lineHeight:1,flexShrink:0,borderRadius:"4px"}}>🗑</button>}
+    </div>
+  );
+}
+
+/* ══ TABLE CARD (vista Distribución) ════════════════════════ */
+function TableCard({table,guests,touchOver,onDrop,onRename,onRemove,onCap,onMDrag,onTDrag,onReturn,onDelete}){
+  const [editing,setEditing]=useState(false);
+  const [nv,setNv]=useState(table.name);
+  const [mOver,setMOver]=useState(false);
+  const ref=useRef(null);
+  const count=guests.length,cap=table.capacity,over=mOver||touchOver;
+  const pct=Math.min((count/cap)*100,100),overCap=count>cap;
+  const barC=overCap?"#D03030":count>=cap*0.8?"#C08020":"#48A858";
+  return (
+    <div ref={ref} data-dropzone={table.id}
+      onDragEnter={()=>setMOver(true)}
+      onDragLeave={e=>{if(!ref.current?.contains(e.relatedTarget))setMOver(false);}}
+      onDragOver={e=>e.preventDefault()}
+      onDrop={e=>{e.preventDefault();setMOver(false);onDrop(table.id);}}
+      style={{background:over?C.dropBg:C.card,border:`2px solid ${over?C.dropBd:overCap?"#D08080":C.border}`,borderRadius:"12px",padding:"11px",transition:"border-color 0.12s,background 0.12s",boxShadow:over?"0 0 0 3px rgba(58,136,216,0.15)":"0 2px 6px rgba(0,0,0,0.05)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:"5px",marginBottom:"5px"}}>
+        <span>🪑</span>
+        {editing
+          ? <input value={nv} onChange={e=>setNv(e.target.value)} autoFocus
+              onBlur={()=>{onRename(table.id,nv);setEditing(false);}}
+              onKeyDown={e=>{if(e.key==="Enter")e.target.blur();if(e.key==="Escape"){setNv(table.name);setEditing(false);}}}
+              style={{flex:1,border:"none",borderBottom:`2px solid ${C.gold}`,background:"transparent",fontSize:"12px",fontWeight:700,color:C.text,outline:"none",fontFamily:"inherit"}}/>
+          : <div onDoubleClick={()=>{setNv(table.name);setEditing(true);}} title="Doble clic = renombrar"
+              style={{flex:1,fontWeight:700,fontSize:"12px",color:C.text,cursor:"text",userSelect:"none",WebkitUserSelect:"none"}}>{table.name}</div>}
+        <span style={{fontSize:"11px",fontWeight:700,color:overCap?"#C03030":count>=cap*0.8?"#A06010":C.mid,whiteSpace:"nowrap"}}>{count}/{cap}</span>
+        <button onClick={()=>onCap(table.id,cap-1)} disabled={cap<=1}
+          style={{background:"none",border:`1px solid ${C.border}`,borderRadius:"3px",cursor:cap>1?"pointer":"not-allowed",width:"15px",height:"15px",fontSize:"12px",lineHeight:"13px",color:C.mid,padding:0}}>−</button>
+        <button onClick={()=>onCap(table.id,cap+1)}
+          style={{background:"none",border:`1px solid ${C.border}`,borderRadius:"3px",cursor:"pointer",width:"15px",height:"15px",fontSize:"12px",lineHeight:"13px",color:C.mid,padding:0}}>+</button>
+        <button onClick={()=>onRemove(table.id)} title="Eliminar mesa"
+          style={{background:"none",border:"none",cursor:"pointer",color:"#C8C0B8",fontSize:"13px",padding:0,lineHeight:1}}>🗑</button>
+      </div>
+      <div style={{height:"3px",background:"#F0E4D4",borderRadius:"2px",marginBottom:"7px"}}>
+        <div style={{height:"100%",width:`${pct}%`,background:barC,borderRadius:"2px",transition:"width 0.3s"}}/>
+      </div>
+      <div style={{minHeight:"48px"}}>
+        {guests.length===0
+          ? <div style={{textAlign:"center",color:C.light,fontSize:"11px",padding:"12px 6px",border:`2px dashed ${over?C.dropBd:C.border}`,borderRadius:"7px"}}>Arrastra invitados aquí</div>
+          : guests.map(g=><GuestCard key={g.id} guest={g} fromTable={table.id} onMDrag={onMDrag} onTDrag={onTDrag} onReturn={onReturn} onDelete={onDelete} compact/>)}
+      </div>
+    </div>
+  );
+}
+
+/* ══ FLOOR PLAN ══════════════════════════════════════════════ */
+function FloorPlan({tables,guests,assignments,onMove}){
+  const containerRef=useRef(null);
+  const dragRef=useRef(null);
+  const [selected,setSelected]=useState(null);
+
+  /* Drag de mesas: mouse + touch inmediato (sin long press, no hay scroll que proteger) */
+  useEffect(()=>{
+    const mv=e=>{
+      if(!dragRef.current||!containerRef.current)return;
+      e.preventDefault();
+      const p=e.touches?e.touches[0]:e;
+      const r=containerRef.current.getBoundingClientRect();
+      const dx=((p.clientX-dragRef.current.cx)/r.width)*100;
+      const dy=((p.clientY-dragRef.current.cy)/r.height)*100;
+      const nx=Math.max(3,Math.min(94,dragRef.current.ox+dx));
+      const ny=Math.max(3,Math.min(92,dragRef.current.oy+dy));
+      onMove(dragRef.current.id,nx,ny);
+    };
+    const up=()=>{ dragRef.current=null; };
+    document.addEventListener("mousemove",mv);
+    document.addEventListener("mouseup",up);
+    document.addEventListener("touchmove",mv,{passive:false});
+    document.addEventListener("touchend",up);
+    document.addEventListener("touchcancel",up);
+    return()=>{
+      document.removeEventListener("mousemove",mv);
+      document.removeEventListener("mouseup",up);
+      document.removeEventListener("touchmove",mv);
+      document.removeEventListener("touchend",up);
+      document.removeEventListener("touchcancel",up);
+    };
+  },[onMove]);
+
+  const startDrag=(e,t)=>{
+    e.preventDefault();e.stopPropagation();
+    const p=e.touches?e.touches[0]:e;
+    dragRef.current={id:t.id,cx:p.clientX,cy:p.clientY,ox:t.x,oy:t.y};
+    setSelected(null);
+  };
+
+  const getTableGuests=tid=>guests.filter(g=>assignments[g.id]===tid);
+
+  /* Colores de círculo */
+  const circleColor=(count,cap)=>{
+    if(count===0)return"#D8CEC4";
+    if(count>cap)return"#D03030";
+    if(count>=cap*0.8)return"#C08020";
+    return"#48A858";
+  };
+
+  const selTable=tables.find(t=>t.id===selected);
+  const selGuests=selTable?getTableGuests(selTable.id):[];
+
+  return (
+    <div style={{flex:1,overflow:"hidden",padding:"12px 16px",display:"flex",gap:"12px"}}>
+
+      {/* Canvas del salón */}
+      <div style={{flex:1,position:"relative"}}>
+        <div ref={containerRef}
+          onClick={()=>setSelected(null)}
+          style={{width:"100%",height:"100%",borderRadius:"14px",overflow:"hidden",position:"relative",
+            background:"#F0E0C0",
+            backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(180,140,80,0.18) 39px,rgba(180,140,80,0.18) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(180,140,80,0.18) 39px,rgba(180,140,80,0.18) 40px)",
+            boxShadow:"inset 0 0 0 4px rgba(150,100,40,0.2), 0 4px 20px rgba(0,0,0,0.12)",
+            cursor:"default"}}>
+
+          {/* Pista de baile */}
+          <div style={{position:"absolute",left:"31%",top:"28%",width:"38%",height:"34%",borderRadius:"50%",
+            background:"rgba(184,145,58,0.12)",border:"3px dashed rgba(184,145,58,0.55)",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            pointerEvents:"none",userSelect:"none"}}>
+            <div style={{fontSize:"22px"}}>🎵</div>
+            <div style={{fontSize:"13px",fontWeight:700,color:"rgba(140,90,20,0.8)",fontStyle:"italic",marginTop:"4px"}}>Pista de Baile</div>
+            <div style={{fontSize:"22px"}}>🎵</div>
+          </div>
+
+          {/* Mesas */}
+          {tables.map(t=>{
+            const tg=getTableGuests(t.id);
+            const cnt=tg.length,cap=t.capacity;
+            const cc=circleColor(cnt,cap);
+            const isSel=selected===t.id;
+            const shortN=t.name.replace("Mesa de Honor","Honor").replace("Mesa ","M");
+            return (
+              <div key={t.id}
+                onMouseDown={e=>{if(e.button===0){e.stopPropagation();startDrag(e,t);}}}
+                onTouchStart={e=>{e.stopPropagation();startDrag(e,t);}}
+                onClick={e=>{e.stopPropagation();setSelected(isSel?null:t.id);}}
+                style={{position:"absolute",left:`${t.x}%`,top:`${t.y}%`,
+                  transform:"translate(-50%,-50%)",
+                  width:"76px",height:"76px",borderRadius:"50%",
+                  background:"#FFF",border:`4px solid ${cc}`,
+                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                  cursor:"move",userSelect:"none",WebkitUserSelect:"none",
+                  boxShadow:isSel?`0 0 0 3px ${C.gold},0 4px 16px rgba(0,0,0,0.2)`:"0 3px 12px rgba(0,0,0,0.18)",
+                  zIndex:isSel?50:10,transition:"box-shadow 0.15s"}}>
+                <div style={{fontSize:"11px",fontWeight:700,textAlign:"center",lineHeight:1.25,color:C.text,padding:"0 4px",maxWidth:"68px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{shortN}</div>
+                <div style={{fontSize:"10px",fontWeight:700,color:cc,marginTop:"2px"}}>{cnt}/{cap}</div>
+                {/* Mini sillas */}
+                <div style={{position:"absolute",inset:"-10px",borderRadius:"50%",border:"2px dotted rgba(140,100,60,0.3)",pointerEvents:"none"}}/>
+              </div>
+            );
+          })}
+
+          {/* Etiqueta entrada */}
+          <div style={{position:"absolute",bottom:"6px",left:"50%",transform:"translateX(-50%)",fontSize:"11px",color:"rgba(100,70,30,0.6)",fontStyle:"italic",pointerEvents:"none"}}>↑ Entrada</div>
+        </div>
+      </div>
+
+      {/* Panel lateral: invitados de la mesa seleccionada */}
+      <div style={{width:"200px",flexShrink:0,background:C.card,borderRadius:"12px",border:`1px solid ${C.border}`,display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        {selTable?(
+          <>
+            <div style={{padding:"12px 14px",borderBottom:`1px solid ${C.border}`,background:C.goldLt||"#FDF5E5"}}>
+              <div style={{fontWeight:700,fontSize:"13px",color:C.text}}>🪑 {selTable.name}</div>
+              <div style={{fontSize:"11px",color:C.mid,marginTop:"2px"}}>{selGuests.length}/{selTable.capacity} invitados</div>
+            </div>
+            <div style={{flex:1,overflowY:"auto",padding:"8px 10px"}}>
+              {selGuests.length===0
+                ? <div style={{textAlign:"center",color:C.light,fontSize:"12px",padding:"20px 0"}}>Mesa vacía</div>
+                : selGuests.map(g=>{
+                    const isN=g.side==="novia";
+                    return <div key={g.id} style={{padding:"5px 0",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:"6px"}}>
+                      <div style={{width:"6px",height:"6px",borderRadius:"50%",background:isN?C.novia:C.novio,flexShrink:0}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:"12px",fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.name}</div>
+                        <div style={{fontSize:"10px",color:C.mid,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.rel}</div>
+                      </div>
+                    </div>;
+                  })}
+            </div>
+          </>
+        ):(
+          <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",textAlign:"center"}}>
+            <div>
+              <div style={{fontSize:"28px",marginBottom:"8px"}}>👆</div>
+              <div style={{fontSize:"12px",color:C.mid,lineHeight:1.5}}>Toca una mesa para ver sus invitados</div>
+              <div style={{fontSize:"11px",color:C.light,marginTop:"8px"}}>Arrastra las mesas para reorganizar el salón</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══ APP PRINCIPAL ═══════════════════════════════════════════ */
+function App(){
+  const [guests,setGuests]=useState(SEED_GUESTS);
+  const [tables,setTables]=useState(SEED_TABLES);
+  const [assignments,setAssignments]=useState({});
+  const [tab,setTab]=useState("dist");         // "dist" | "plan"
+  const [search,setSearch]=useState("");
+  const [sideF,setSideF]=useState("all");
+  const [touchOverId,setTouchOverId]=useState(null);
+  const [poolMOver,setPoolMOver]=useState(false);
+  const [showAdd,setShowAdd]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [toast,setToast]=useState(null);
+
+  const poolRef=useRef(null);
+  const mDrag=useRef(null);
+  const tState=useRef(null);
+  const tablesRef=useRef(tables);
+  const assignRef=useRef(assignments);
+  const guestsRef=useRef(guests);
+  const nextGid=useRef(97);
+  const nextTid=useRef(12);
+  const fileIn=useRef(null);
+
+  useEffect(()=>{ tablesRef.current=tables; },[tables]);
+  useEffect(()=>{ assignRef.current=assignments; },[assignments]);
+  useEffect(()=>{ guestsRef.current=guests; },[guests]);
+
+  const showT=(msg,ms=2500)=>{ setToast(msg); setTimeout(()=>setToast(null),ms); };
+
+  /* ─ Touch DnD invitados (long press 400ms) ─ */
+  useEffect(()=>{
+    const onMove=e=>{
+      const s=tState.current; if(!s)return;
+      const t=e.touches[0];
+      if(!s.active){
+        if(Math.abs(t.clientX-s.sx)>8||Math.abs(t.clientY-s.sy)>8){clearTimeout(s.timer);tState.current=null;}
+        return;
+      }
+      e.preventDefault();
+      s.ghost.style.left=(t.clientX-s.ox)+"px";
+      s.ghost.style.top=(t.clientY-s.oy)+"px";
+      s.ghost.style.visibility="hidden";
+      const el=document.elementFromPoint(t.clientX,t.clientY);
+      s.ghost.style.visibility="visible";
+      let nd=el; while(nd&&!nd.dataset.dropzone)nd=nd.parentElement;
+      const tgt=nd?.dataset.dropzone||null;
+      if(tgt!==s.target){s.target=tgt;setTouchOverId(tgt);}
+    };
+    const onEnd=()=>{
+      const s=tState.current; if(!s)return;
+      clearTimeout(s.timer);
+      if(s.ghost)s.ghost.remove();
+      const{active,gid,target}=s; tState.current=null; setTouchOverId(null);
+      if(!active||!target)return;
+      const tid=target==="pool"?null:target;
+      if(tid){
+        const tb=tablesRef.current.find(x=>x.id===tid);
+        if(!tb)return;
+        const cur=guestsRef.current.filter(g=>assignRef.current[g.id]===tid).length;
+        if(cur>=tb.capacity&&assignRef.current[gid]!==tid){showT("⚠️ "+tb.name+" está llena");return;}
+      }
+      setAssignments(p=>{const n={...p};if(tid===null)delete n[gid];else n[gid]=tid;return n;});
+    };
+    document.addEventListener("touchmove",onMove,{passive:false});
+    document.addEventListener("touchend",onEnd);
+    document.addEventListener("touchcancel",onEnd);
+    return()=>{
+      document.removeEventListener("touchmove",onMove);
+      document.removeEventListener("touchend",onEnd);
+      document.removeEventListener("touchcancel",onEnd);
+    };
+  },[]);
+
+  const startTDrag=(touch,rect,gid,fromTable)=>{
+    if(tState.current?.timer)clearTimeout(tState.current.timer);
+    const s={gid,fromTable,sx:touch.clientX,sy:touch.clientY,ox:touch.clientX-rect.left,oy:touch.clientY-rect.top,rect,ghost:null,active:false,target:null,timer:null};
+    s.timer=setTimeout(()=>{
+      if(!tState.current||tState.current!==s)return;
+      s.active=true;s.timer=null;
+      const g=guestsRef.current.find(x=>x.id===gid); if(!g)return;
+      const isN=g.side==="novia";
+      const gh=document.createElement("div");
+      gh.innerHTML=`<div style="display:flex;align-items:center;gap:6px;"><div style="width:7px;height:7px;border-radius:50%;background:${isN?"#B84F6A":"#2E6FA8"};"></div><span style="font-weight:600;font-size:13px;color:#281408;white-space:nowrap;">${g.name}</span></div>`;
+      Object.assign(gh.style,{position:"fixed",zIndex:"9999",pointerEvents:"none",left:(s.sx-s.ox)+"px",top:(s.sy-s.oy)+"px",width:s.rect.width+"px",background:isN?"#FDF0F4":"#EDF4FB",border:`1.5px solid ${isN?"#EDBBCA":"#B3CEED"}`,borderRadius:"7px",padding:"6px 10px",fontFamily:"Georgia,serif",boxShadow:"0 12px 32px rgba(0,0,0,0.28)",transform:"rotate(-2deg) scale(1.05)",boxSizing:"border-box"});
+      document.body.appendChild(gh);s.ghost=gh;
+      if(navigator.vibrate)navigator.vibrate(15);
+    },400);
+    tState.current=s;
+  };
+
+  /* ─ Lógica asignación ─ */
+  const moveGuest=(gid,tid)=>{
+    if(tid!==null){
+      const tb=tables.find(x=>x.id===tid); if(!tb)return;
+      const cur=guests.filter(g=>assignments[g.id]===tid).length;
+      if(cur>=tb.capacity&&assignments[gid]!==tid){showT("⚠️ "+tb.name+" está llena");return;}
+    }
+    setAssignments(p=>{const n={...p};if(tid===null)delete n[gid];else n[gid]=tid;return n;});
+  };
+  const handleMouseDrop=tid=>{if(!mDrag.current)return;moveGuest(mDrag.current.gid,tid);mDrag.current=null;};
+
+  /* ─ Invitados ─ */
+  const addGuest=(name,rel,side)=>{
+    const id=nextGid.current++;
+    setGuests(p=>[...p,{id,name,rel,side}]);
+    showT("✅ "+name+" agregado/a");
+  };
+  const delGuest=gid=>{
+    setGuests(p=>p.filter(g=>g.id!==gid));
+    setAssignments(p=>{const n={...p};delete n[gid];return n;});
+  };
+
+  /* ─ Mesas ─ */
+  const addTable=()=>{
+    const id="t"+nextTid.current;
+    setTables(p=>[...p,{id,name:"Mesa "+nextTid.current,capacity:10,x:50,y:50}]);
+    nextTid.current++;
+  };
+  const removeTable=tid=>{
+    setTables(p=>p.filter(t=>t.id!==tid));
+    setAssignments(p=>{const n={...p};Object.keys(n).forEach(k=>{if(n[k]===tid)delete n[k];});return n;});
+  };
+  const updateTablePos=useCallback((tid,x,y)=>{
+    setTables(p=>p.map(t=>t.id===tid?{...t,x,y}:t));
+  },[]);
+
+  /* ─ Derivados ─ */
+  const unassigned=guests.filter(g=>!assignments[g.id]);
+  const filtered=unassigned.filter(g=>{
+    const q=search.toLowerCase();
+    return(g.name.toLowerCase().includes(q)||g.rel.toLowerCase().includes(q))&&(sideF==="all"||g.side===sideF);
+  });
+  const assigned=Object.keys(assignments).length;
+  const getTableGuests=tid=>guests.filter(g=>assignments[g.id]===tid);
+
+  /* ─ IA ─ */
+  const suggest=async()=>{
+    setLoading(true);
+    try{
+      const gl=guests.map(g=>`${g.id}|${g.name}|${g.rel}|${g.side}`).join("\n");
+      const tl=tables.map(t=>`${t.id}: ${t.name} (max ${t.capacity})`).join("\n");
+      const prompt=`Eres organizador de bodas. Asigna los ${guests.length} invitados a las mesas.
+Reglas: parejas/familias juntas, adultos mayores cómodos, niños cerca de padres, compañeros trabajo novia juntos, compañeros trabajo novio juntos, coro junto, novios+padres+hermanos en Mesa de Honor, no excedas capacidad.
+Invitados(id|nombre|parentesco|lado):\n${gl}\nMesas:\n${tl}
+RESPONDE SOLO JSON:{"id_invitado":"id_mesa",...}`;
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+      const data=await res.json();
+      const raw=(data.content.find(c=>c.type==="text")?.text||"{}").replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(raw);
+      const next={};
+      for(const[gId,tId] of Object.entries(parsed)){
+        const g=guests.find(x=>x.id===parseInt(gId));
+        const t=tables.find(x=>x.id===tId);
+        if(g&&t)next[g.id]=tId;
+      }
+      setAssignments(next);
+      showT("✅ IA asignó "+Object.keys(next).length+"/"+guests.length+" invitados",3000);
+    }catch(e){console.error(e);showT("❌ Error al generar sugerencia",3000);}
+    setLoading(false);
+  };
+
+  /* ─ Excel export ─ */
+  const saveExcel=()=>{
+    const wb=XLSX.utils.book_new();
+    // Hoja visual
+    const rows=[["Mesa","Nombre","Parentesco","Familia"]];
+    tables.forEach(t=>{
+      const tg=getTableGuests(t.id);if(!tg.length)return;
+      tg.forEach(g=>rows.push([t.name,g.name,g.rel,g.side==="novia"?"Novia (Magaly)":"Novio (Juan)"]));
+      rows.push([]);
+    });
+    const ug=guests.filter(g=>!assignments[g.id]);
+    if(ug.length){rows.push(["SIN ASIGNAR","","",""]);ug.forEach(g=>rows.push(["",g.name,g.rel,g.side==="novia"?"Novia (Magaly)":"Novio (Juan)"]));};
+    const ws1=XLSX.utils.aoa_to_sheet(rows);
+    ws1["!cols"]=[{width:22},{width:24},{width:40},{width:18}];
+    XLSX.utils.book_append_sheet(wb,ws1,"Distribución");
+    // Hoja estado
+    const state=[
+      ["MESAS","","","",""],
+      ["id","nombre","capacidad","x","y"],
+      ...tables.map(t=>[t.id,t.name,t.capacity,t.x,t.y]),
+      [],
+      ["INVITADOS","","",""],
+      ["id","nombre","parentesco","lado"],
+      ...guests.map(g=>[g.id,g.name,g.rel,g.side]),
+      [],
+      ["ASIGNACIONES",""],
+      ["id_invitado","id_mesa"],
+      ...Object.entries(assignments).map(([gId,tId])=>[parseInt(gId),tId]),
+    ];
+    const ws2=XLSX.utils.aoa_to_sheet(state);
+    XLSX.utils.book_append_sheet(wb,ws2,"Estado_App");
+    XLSX.writeFile(wb,"mesas_matrimonio_magaly_juan.xlsx");
+    showT("📊 Excel guardado");
+  };
+
+  /* ─ Excel import ─ */
+  const loadExcel=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(ev.target.result),{type:"array"});
+
+        /* ── FORMATO NUEVO: tiene hoja "Estado_App" ── */
+        const wsNew=wb.Sheets["Estado_App"];
+        if(wsNew){
+          const rows=XLSX.utils.sheet_to_json(wsNew,{header:1,defval:""});
+          let i=0;const nT=[],nG=[],nA={};
+          while(i<rows.length&&String(rows[i][0]).toUpperCase()!=="MESAS")i++;i+=2;
+          while(i<rows.length&&rows[i][0]!==""&&String(rows[i][0]).toUpperCase()!=="INVITADOS"){
+            const[id,name,cap,x,y]=rows[i];
+            if(id&&name)nT.push({id:String(id),name:String(name),capacity:parseInt(cap)||10,x:parseFloat(x)||50,y:parseFloat(y)||50});
+            i++;
+          }
+          while(i<rows.length&&String(rows[i][0]).toUpperCase()!=="INVITADOS")i++;i+=2;
+          while(i<rows.length&&rows[i][0]!==""&&String(rows[i][0]).toUpperCase()!=="ASIGNACIONES"){
+            const[id,name,rel,side]=rows[i];
+            if(id&&name)nG.push({id:parseInt(id),name:String(name),rel:String(rel),side:String(side)});
+            i++;
+          }
+          while(i<rows.length&&String(rows[i][0]).toUpperCase()!=="ASIGNACIONES")i++;i+=2;
+          while(i<rows.length&&rows[i][0]!==""){
+            const[gId,tId]=rows[i];
+            if(gId&&tId){const gn=parseInt(gId);if(nG.find(g=>g.id===gn)&&nT.find(t=>t.id===String(tId)))nA[gn]=String(tId);}
+            i++;
+          }
+          if(!nT.length){showT("❌ Formato no válido");return;}
+          const mxT=nT.reduce((m,t)=>{const n=parseInt(t.id.replace(/\D/g,""));return isNaN(n)?m:Math.max(m,n);},0);
+          const mxG=nG.reduce((m,g)=>Math.max(m,g.id),0);
+          nextTid.current=mxT+1;nextGid.current=mxG+1;
+          setTables(nT);setGuests(nG.length?nG:SEED_GUESTS);setAssignments(nA);
+          showT("✅ Cargado: "+nT.length+" mesas, "+Object.keys(nA).length+" asignados",3500);
+          return;
+        }
+
+        /* ── FORMATO ANTIGUO: solo hoja "Distribución" ── */
+        const wsOld=wb.Sheets["Distribución"]||wb.Sheets[wb.SheetNames[0]];
+        if(!wsOld){showT("❌ Archivo no reconocido");return;}
+
+        const rows=XLSX.utils.sheet_to_json(wsOld,{header:1,defval:""});
+        // Posiciones por defecto para hasta 20 mesas
+        const POS=[
+          {x:50,y:5},{x:15,y:8},{x:4,y:30},{x:4,y:55},{x:15,y:80},
+          {x:38,y:88},{x:62,y:88},{x:83,y:80},{x:93,y:55},{x:93,y:30},
+          {x:82,y:8},{x:30,y:50},{x:50,y:50},{x:70,y:50},{x:20,y:50},
+          {x:40,y:20},{x:60,y:20},{x:25,y:70},{x:55,y:70},{x:75,y:20}
+        ];
+
+        // Parsear lado desde columna "Familia"
+        const parseSide=f=>(String(f).toLowerCase().includes("novio")||String(f).toLowerCase().includes("juan"))?"novio":"novia";
+
+        // Buscar invitado por nombre + lado (y rel como desempate)
+        const findGuest=(name,side,rel)=>{
+          const nm=String(name).trim();
+          const sd=parseSide(side);
+          // Coincidencia exacta nombre+lado+rel
+          let g=SEED_GUESTS.find(x=>x.name===nm&&x.side===sd&&x.rel===String(rel).trim());
+          if(g)return g;
+          // Coincidencia nombre+lado
+          const cands=SEED_GUESTS.filter(x=>x.name===nm&&x.side===sd);
+          if(cands.length===1)return cands[0];
+          if(cands.length>1){
+            const byRel=cands.find(x=>x.rel.includes(String(rel).trim())||String(rel).trim().includes(x.rel));
+            return byRel||cands[0];
+          }
+          // Solo por nombre
+          const byName=SEED_GUESTS.filter(x=>x.name===nm);
+          if(byName.length===1)return byName[0];
+          if(byName.length>1)return byName.find(x=>x.side===sd)||byName[0];
+          return null;
+        };
+
+        // Recolectar mesas únicas y filas de invitados
+        const tableOrder=[];const tableSet=new Set();const guestRows=[];
+        for(let i=1;i<rows.length;i++){
+          const[mesa,nombre,parentesco,familia]=rows[i];
+          const mesaStr=String(mesa||"").trim();
+          const nombreStr=String(nombre||"").trim();
+          if(!mesaStr||mesaStr.toUpperCase()==="SIN ASIGNAR"||!nombreStr)continue;
+          if(!tableSet.has(mesaStr)){tableSet.add(mesaStr);tableOrder.push(mesaStr);}
+          guestRows.push({mesa:mesaStr,nombre:nombreStr,parentesco:String(parentesco||"").trim(),familia:String(familia||"").trim()});
+        }
+
+        // Crear objetos de mesa
+        const tableMap={};const nT=[];
+        tableOrder.forEach((name,idx)=>{
+          const id="t"+(idx+1);
+          tableMap[name]=id;
+          nT.push({id,name,capacity:10,...(POS[idx]||{x:50,y:50})});
+        });
+
+        // Crear asignaciones, usar lista de invitados original
+        const nA={};
+        guestRows.forEach(({mesa,nombre,parentesco,familia})=>{
+          const tid=tableMap[mesa];if(!tid)return;
+          const g=findGuest(nombre,familia,parentesco);
+          if(g&&!nA[g.id])nA[g.id]=tid;
+        });
+
+        nextTid.current=nT.length+1;nextGid.current=97;
+        setTables(nT);setGuests(SEED_GUESTS);setAssignments(nA);
+        showT("✅ Formato antiguo: "+nT.length+" mesas, "+Object.keys(nA).length+" invitados asignados",3500);
+
+      }catch(err){console.error(err);showT("❌ Error al leer el archivo");}
+      e.target.value="";
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  /* ══ RENDER ════════════════════════════════════════════════ */
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100vh",background:C.bg,fontFamily:"Georgia,'Times New Roman',serif",color:C.text}}>
+
+      {/* Toast */}
+      {toast&&<div style={{position:"fixed",top:14,right:14,zIndex:9999,background:"#281408",color:"#FFF",padding:"9px 16px",borderRadius:"9px",fontSize:"13px",fontWeight:500,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>{toast}</div>}
+
+      {/* Modal agregar */}
+      {showAdd&&<AddGuestModal onAdd={addGuest} onClose={()=>setShowAdd(false)}/>}
+
+      {/* Input file oculto */}
+      <input ref={fileIn} type="file" accept=".xlsx,.xls" style={{display:"none"}} onChange={loadExcel}/>
+
+      {/* ── HEADER ── */}
+      <div style={{background:"#FFF",borderBottom:`1px solid ${C.border}`,padding:"8px 16px",display:"flex",alignItems:"center",gap:"8px",flexShrink:0,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:"15px"}}>💒 Magaly &amp; Juan</div>
+          <div style={{fontSize:"11px",color:C.mid}}>
+            <span style={{color:assigned===guests.length?"#409040":C.novia,fontWeight:700}}>{assigned}/{guests.length}</span> asignados · {unassigned.length} sin asignar · {tables.length} mesas
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:"flex",gap:"4px",background:"#F0E8DE",borderRadius:"9px",padding:"3px",marginLeft:"8px"}}>
+          {[{k:"dist",l:"💺 Distribución"},{k:"plan",l:"🗺️ Plano del Salón"}].map(({k,l})=>(
+            <button key={k} onClick={()=>setTab(k)}
+              style={{padding:"5px 12px",borderRadius:"7px",border:"none",cursor:"pointer",fontSize:"12px",fontWeight:700,fontFamily:"inherit",background:tab===k?"#FFF":"transparent",color:tab===k?C.text:C.mid,boxShadow:tab===k?"0 1px 4px rgba(0,0,0,0.12)":"none",transition:"all 0.15s"}}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        <div style={{flex:1}}/>
+
+        {tab==="dist"&&<>
+          <button onClick={suggest} disabled={loading} style={bs(C.gold,loading)}>{loading?"⏳ Generando...":"✨ IA"}</button>
+          <button onClick={addTable} style={bs("#4A82B0")}>+ Mesa</button>
+          <button onClick={()=>setShowAdd(true)} style={bs("#6A9A5A")}>+ Invitado</button>
+          <button onClick={()=>{setAssignments({});showT("↺ Limpiado");}} style={bs("#9A8878")}>↺</button>
+        </>}
+
+        <div style={{width:"1px",height:"26px",background:C.border}}/>
+        <button onClick={saveExcel} disabled={assigned===0} style={bs("#3A7840",assigned===0)}>⬇ Guardar</button>
+        <button onClick={()=>fileIn.current?.click()} style={bs("#6055A0")}>📂 Cargar</button>
+      </div>
+
+      {/* ── DISTRIBUCIÓN TAB ── */}
+      {tab==="dist"&&(
+        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+
+          {/* Pool */}
+          <div style={{width:"260px",flexShrink:0,background:"#FFF",borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"10px 12px",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontWeight:700,fontSize:"12px",marginBottom:"7px"}}>Sin asignar ({unassigned.length})</div>
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Buscar..."
+                style={{width:"100%",padding:"5px 9px",borderRadius:"7px",border:`1px solid ${C.border}`,fontSize:"12px",boxSizing:"border-box",background:C.bg,outline:"none",color:C.text,fontFamily:"inherit"}}/>
+              <div style={{display:"flex",gap:"4px",marginTop:"7px"}}>
+                {[{k:"all",l:"Todos",c:C.gold},{k:"novia",l:"💗 Magaly",c:C.novia},{k:"novio",l:"💙 Juan",c:C.novio}].map(({k,l,c})=>(
+                  <button key={k} onClick={()=>setSideF(k)}
+                    style={{flex:1,padding:"4px 2px",borderRadius:"6px",border:`1px solid ${sideF===k?c:C.border}`,cursor:"pointer",fontSize:"10px",fontWeight:700,background:sideF===k?c:"transparent",color:sideF===k?"#FFF":C.mid,fontFamily:"inherit",transition:"all 0.12s"}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div ref={poolRef} data-dropzone="pool"
+              onDragEnter={()=>setPoolMOver(true)}
+              onDragLeave={e=>{if(!poolRef.current?.contains(e.relatedTarget))setPoolMOver(false);}}
+              onDragOver={e=>e.preventDefault()}
+              onDrop={e=>{e.preventDefault();setPoolMOver(false);handleMouseDrop(null);}}
+              style={{flex:1,overflowY:"auto",padding:"8px 10px",background:(poolMOver||touchOverId==="pool")?C.dropBg:"transparent",transition:"background 0.12s"}}>
+              {filtered.length===0
+                ? <div style={{textAlign:"center",color:C.light,padding:"22px 8px",fontSize:"12px"}}>{unassigned.length===0?"🎉 ¡Todos asignados!":"Sin coincidencias"}</div>
+                : filtered.map(g=><GuestCard key={g.id} guest={g} fromTable={null}
+                    onMDrag={(gid,from)=>{mDrag.current={gid,from};}}
+                    onTDrag={startTDrag}
+                    onDelete={delGuest}/>)}
+            </div>
+          </div>
+
+          {/* Mesas grid */}
+          <div style={{flex:1,overflowY:"auto",padding:"14px 16px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:"12px",alignContent:"start"}}>
+              {tables.map(t=>(
+                <TableCard key={t.id} table={t} guests={getTableGuests(t.id)} touchOver={touchOverId===t.id}
+                  onDrop={handleMouseDrop}
+                  onRename={(id,n)=>setTables(p=>p.map(x=>x.id===id?{...x,name:n}:x))}
+                  onRemove={removeTable}
+                  onCap={(id,c)=>{if(c>=1)setTables(p=>p.map(x=>x.id===id?{...x,capacity:c}:x));}}
+                  onMDrag={(gid,from)=>{mDrag.current={gid,from};}}
+                  onTDrag={startTDrag}
+                  onReturn={gid=>moveGuest(gid,null)}
+                  onDelete={delGuest}/>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PLANO TAB ── */}
+      {tab==="plan"&&(
+        <FloorPlan tables={tables} guests={guests} assignments={assignments} onMove={updateTablePos}/>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
